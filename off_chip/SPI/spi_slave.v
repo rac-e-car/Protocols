@@ -1,12 +1,10 @@
-module spi_slave #(parameter DIV = 50
-                   parameter DATA_WIDTH = 8);
-
-                   (
+module spi_slave #(parameter DIV = 50,
+                   parameter DATA_WIDTH = 8)
                             
                      ( input clk, rst_n, mosi, cs, sclk,
-                       output miso, done,
-                       input {DATA_WIDTH-1:0] tx_data,
-                       output [DATA_WIDTH-1:0] rx_data );
+                       output reg miso, done,
+                       input [DATA_WIDTH-1:0] tx_data,
+                       output reg [DATA_WIDTH-1:0] rx_data );
 
 
                    reg [DATA_WIDTH-1:0] tx_shift_register;
@@ -22,7 +20,7 @@ module spi_slave #(parameter DIV = 50
 
                  wire rising_edge, falling_edge;
 
-                 assign rising_edge = (sclk_pev == 0 && sclk == 1);
+                 assign rising_edge = (sclk_prev == 0 && sclk == 1);
                  assign falling_edge = (sclk_prev == 1 && sclk == 0);
 
                  //===============================
@@ -30,9 +28,9 @@ module spi_slave #(parameter DIV = 50
                  //===============================
                  
                  localparam [1:0]
-                 IDLE: 2'b00;
-                 TRANSFER: 2'b01;
-                 DONE; 2'b10;
+                 IDLE = 2'b00,
+                 TRANSFER = 2'b01,
+                 DONE = 2'b10;
 
                  reg [1:0] current_state, next_state;
 
@@ -51,7 +49,7 @@ module spi_slave #(parameter DIV = 50
 
                  //==================================
                  //ALWAYS BLOCK 2 -- next state logic
-                 //==================================
+                 //=========================-o i=========
 
                  always @(*) begin
 
@@ -66,7 +64,7 @@ module spi_slave #(parameter DIV = 50
 
                          TRANSFER: begin
 
-                             if(count == DATA_WIDTH)
+                             if(counter == DATA_WIDTH-1)
                                  next_state = DONE;
                          end
 
@@ -112,6 +110,7 @@ module spi_slave #(parameter DIV = 50
                                   counter <= 0;
 
                                   tx_shift_register <= tx_data;
+                                  miso <= tx_data[DATA_WIDTH-1];
 
                               end
 
@@ -123,7 +122,7 @@ module spi_slave #(parameter DIV = 50
 
                                   if(falling_edge) begin
                                       miso <= tx_shift_register[DATA_WIDTH-1];
-                                      tx_shift_register <= { [tx_shift_register-2:0],1'b0 };
+                                      tx_shift_register <= { tx_shift_register[DATA_WIDTH-2:0],1'b0 };
                                   end
 
                                   //===================
@@ -131,16 +130,16 @@ module spi_slave #(parameter DIV = 50
                                   //===================
 
                                   if(rising_edge) begin
-                                      rx_shift_register <= { [rx_shift_register-2:0],mosi };
+                                      rx_shift_register <= { rx_shift_register[DATA_WIDTH-2:0],mosi };
 
-                                      count <= count+1;
+                                      counter <= counter + 1;
                                   end
                               end
 
                               DONE: begin
 
                                   done <= 1;
-                                  rx_shift_register <= rx_data;
+                                  rx_data <= rx_shift_register;
 
                               end
                           endcase

@@ -42,7 +42,7 @@ always @(posedge clk or negedge presetn) begin
         penable <= 0;
     end else begin
         current_state <= next_state;
-        if(PSEL && PENABLE && PREADY && !PWRITE)
+        if(psel && penable && pready && !pwrite)
                 read_data <= prdata;
         end
     end

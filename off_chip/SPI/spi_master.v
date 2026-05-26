@@ -3,7 +3,7 @@ module spi_master #(parameter DIV = 50,
                 (
                     input clk, rst_n, start, miso,
                     input [DATA_WIDTH-1:0] tx_data,
-                    output reg done, mosi, cs,sclk,
+                    output reg done, mosi, cs, sclk,
                     output reg [DATA_WIDTH-1:0] rx_data
                 );
 
@@ -17,7 +17,7 @@ module spi_master #(parameter DIV = 50,
 
                 clk_div #(DIV) 
                         inst_div_master (
-                                 .clk(clk), .rst)~rst_n), .spi_tick(sclk_int)
+                                 .clk(clk), .rst(~rst_n), .spi_tick(sclk_int)
                                  );
 
                 //=================================
@@ -27,8 +27,8 @@ module spi_master #(parameter DIV = 50,
 
                 wire falling_edge, rising_edge;
 
-                assign rising_edge <= (sclk__prev == 0 && sclk_int == 1);
-                assign falling_edge <= (sclk_prev == 1 && sclk_int == 0);
+                assign rising_edge = (sclk_prev == 0 && sclk_int == 1);
+                assign falling_edge = (sclk_prev == 1 && sclk_int == 0);
 
                 //=================================
                 //STATE DECLARATION
@@ -36,9 +36,9 @@ module spi_master #(parameter DIV = 50,
 
 
                 localparam [1:0]
-                IDLE = 2'b00;
-                LOAD = 2'b01;
-                TRANSFER = 2'b10;
+                IDLE = 2'b00,
+                LOAD = 2'b01,
+                TRANSFER = 2'b10,
                 DONE = 2'b11;
 
                 reg [1:0] current_state, next_state;
@@ -76,7 +76,7 @@ module spi_master #(parameter DIV = 50,
 
                     TRANSFER: begin
 
-                        if(count == DATA_WIDTH)
+                        if(count == DATA_WIDTH-1)
                         next_state = DONE;          
                         end
 
@@ -96,18 +96,18 @@ module spi_master #(parameter DIV = 50,
 
         always @(posedge clk or negedge rst_n) begin
 
-            if(rst_n) begin
+            if(!rst_n) begin
                         done <= 0;
                         mosi <= 0;
                         cs <= 0;
-                        sclk <= CPOL;
+                        sclk <= 0;
                         rx_data <= 0;
                         
-                        rx_shift_register <= 0;
+                        tx_shift_register <= 0;
                         rx_shift_register <= 0;
 
                         count<=0;
-                        clk_div<=0;
+                        sclk_prev<=0;
                     end
                     else begin
 
@@ -127,10 +127,12 @@ module spi_master #(parameter DIV = 50,
 
                     LOAD: begin
 
-                        cs = 0;
-                        tx_shift_register = tx_data;
-                        rx_shift_register = 0;
+                        cs <= 0;
+                        tx_shift_register <= tx_data;
+                        rx_shift_register <= 0;
                         count <= 0;
+
+                        mosi <= tx_data[DATA_WIDTH-1];
 
                         end
 
@@ -143,15 +145,11 @@ module spi_master #(parameter DIV = 50,
                         //TRANSFER AT NEGEDGE
                         //==================================
 
-                        clk_div <= ~clk_div;
-
                         if (falling_edge) begin
-
-                        sclk <= 0;
 
                         mosi <= tx_shift_register[DATA_WIDTH-1];
 
-                        tx_shift_register = {tx_shift_reigster[DATA_WIDTH-2:0],1'b0};
+                        tx_shift_register <= { tx_shift_register[DATA_WIDTH-2:0], 1'b0 };
                     end
 
                         if (rising_edge) begin
@@ -159,7 +157,6 @@ module spi_master #(parameter DIV = 50,
                         //SAMPLING AT POSEDGE
                         //==================================
 
-                            sclk <= 1;
                             rx_shift_register <= {rx_shift_register[DATA_WIDTH-2:0], miso};
 
                             count <= count +1;
