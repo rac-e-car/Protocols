@@ -32,14 +32,10 @@ reg [1:0] current_state, next_state;
 //--------------------------------------------------
 
 
-always @(posedge clk or negedge presetn) begin
+always @(posedge pclk or negedge presetn) begin
     if(!presetn) begin
         current_state <= IDLE;
-        paddr <= 0;
-        pwdata <= 0;
-        read_data <= 0;
-        psel <= 0;
-        penable <= 0;
+      
     end else begin
         current_state <= next_state;
         if(psel && penable && pready && !pwrite)
@@ -67,7 +63,7 @@ always @(*) begin
         end
 
         ACCESS: begin
-            if(PREADY) begin
+            if(pready) begin
                 if(transfer)
                     next_state = SETUP;
                 else
@@ -85,13 +81,14 @@ always @(*) begin
 //--------------------------------------------------
 //  OUTPUT LOGIC
 //--------------------------------------------------
-always @(posedge clk or negedge presetn) begin
+always @(posedge pclk or negedge presetn) begin
     if (!presetn) begin
         paddr <= 0;
         pwdata <= 0;
         penable <= 0;
         psel <= 0;
         pwrite <= 0;
+        read_data <= 0;
     end
     else begin
 
@@ -125,11 +122,11 @@ always @(posedge clk or negedge presetn) begin
 
             default:
             begin
-                PSEL    <= 0;
-                PENABLE <= 0;
-                PWRITE  <= 0;
-                PADDR   <= 0;
-                PWDATA  <= 0;
+                psel    <= 0;
+                penable <= 0;
+                pwrite  <= 0;
+                paddr   <= 0;
+                pwdata  <= 0;
             end
         endcase
     end

@@ -11,13 +11,13 @@ module apb_slave #(
 
                 reg[DATA_WIDTH-1:0] mem [0:15];
 
-                always @(posedge clk or negedge presetn) begin
+                always @(posedge pclk or negedge presetn) begin
                     if(!presetn) begin
                         pready <= 0;
                         pslverr <= 0;
                         prdata <= 0;
 
-                        for(integer i=0; i<16; i=1+1) begin
+                        for(integer i=0; i<16; i=i+1) begin
                             mem[i] <= 0;
                         end
                     end else begin
@@ -32,6 +32,7 @@ module apb_slave #(
                                     prdata <= mem[paddr];
                             
                             end
+                            
                         end
                     end
                     endmodule
