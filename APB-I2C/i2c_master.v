@@ -10,6 +10,8 @@ module i2c_master
     output cmd_ack,
     output read_valid,
     output rx_ack,
+    output busy,
+    output al,
     output scl,
     inout sda
 );
@@ -29,7 +31,7 @@ i2c_clk_gen tick      // clk_tick instantiation
 
 bit8_ctrl inst1       // bit_controller instantiation
 (
-    .int_tick(int_tick), .clk(clk), .rst_n(rst_n), .ena(ena), .din(din), .cmd(cmd_from_byte), .scl(scl), .sda_out(sda_out), .cmd_ack(cmd_ack_internal), .sda_in(sda_in), .dout(dataio)
+    .int_tick(int_tick), .clk(clk), .rst_n(rst_n), .ena(ena), .din(din), .cmd(cmd_from_byte), .scl(scl), .sda_out(sda_out), .cmd_ack(cmd_ack_internal), .sda_in(sda_in), .dout(dataio), .busy(busy), .al(al)
 );
 
 byte_ctrl inst2       // byte_controller instantiation
